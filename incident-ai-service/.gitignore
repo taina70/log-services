@@ -1,7 +1,7 @@
 # compiled output
-/dist
-/node_modules
-/build
+**/dist
+**/node_modules
+**/build
 
 # TypeScript build cache
 *.tsbuildinfo
@@ -10,11 +10,14 @@
 logs
 *.log
 npm-debug.log*
-pnpm-debug.log*
+pnpm-debug.log*gi
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+# Prevent compiled files inside src directory
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
 # OS
 .DS_Store
 
