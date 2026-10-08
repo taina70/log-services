@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { GoogleGenAI } from '@google/genai';
 
 @Injectable()
 export class GeminiService {
+  private readonly logger = new Logger(GeminiService.name);
   private ai: GoogleGenAI;
 
   constructor() {
@@ -27,12 +28,14 @@ export class GeminiService {
       const cleanJson = text.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
     } catch (error) {
-      console.error('Erro ao chamar a API do Gemini:', error);
-      return {
-        rootCause: 'Falha na comunicação com a API de IA',
-        suggestedFix:
-          'Verificar a chave de API e a disponibilidade do serviço Gemini',
-      };
+      this.logger.error('Erro ao chamar a API do Gemini:', error);
+
+      // ALTERAÇÃO AQUI: Em vez de retornar um fallback fixo, lançamos o erro.
+      // Isso faz o fluxo cair no catch do AnalysisController e acionar o channel.nack(msg, false, false),
+      // direcionando o evento com falha para a DLQ.
+      throw new Error(
+        `Gemini API indisponível: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

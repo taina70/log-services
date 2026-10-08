@@ -1,31 +1,27 @@
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
-
-  const port = Number(configService.get('PORT')) || 3002;
-  const rmqUrl =
-    configService.get('RABBITMQ_URL') || 'amqp://guest:guest@localhost:5672';
-  const queueName = configService.get('RABBITMQ_QUEUE') || 'log_queue';
-
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [rmqUrl],
-      queue: queueName,
-      queueOptions: {
-        durable: true,
-      },
-    },
+  app.enableCors({
+    origin: '*', // Em produção, substitua pelo domínio do Frontend (ex: 'http://localhost:5173')
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
   });
 
-  await app.startAllMicroservices();
+  // Habilita validação global via DTOs
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Remove propriedades que não estejam no DTO
+      forbidNonWhitelisted: true, // Retorna erro se enviarem campos extras
+      transform: true, // Converte tipos de Query Params automaticamente (ex: string -> number)
+    }),
+  );
+  
+  const port = process.env.PORT || 3000;
+
   await app.listen(port);
-  console.log(`🚀 Incident AI Service HTTP em http://localhost:${port}`);
-  console.log(`🤖 Incident AI Service escutando fila RabbitMQ [${queueName}]`);
+  console.log(`🚀 Log Service rodando na porta ${port}`);
 }
 bootstrap();
